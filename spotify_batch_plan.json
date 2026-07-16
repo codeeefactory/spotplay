@@ -1,0 +1,342 @@
+[
+  {
+    "name": "01_g_eazy_core_english",
+    "target_count": 100,
+    "min_popularity": 15,
+    "queries": [
+      "artist:\"G-Eazy\"",
+      "\"G-Eazy\" remix",
+      "\"G-Eazy\" feat",
+      "\"G-Eazy\" type rap",
+      "\"Me Myself & I\" rap",
+      "\"No Limit\" rap",
+      "\"I Mean It\" rap",
+      "g eazy style",
+      "bay area rap club",
+      "west coast party rap"
+    ]
+  },
+  {
+    "name": "02_english_night_drive_rap",
+    "target_count": 100,
+    "min_popularity": 20,
+    "queries": [
+      "night drive rap",
+      "dark melodic rap",
+      "smooth trap rap",
+      "late night hip hop",
+      "melodic hip hop",
+      "moody rap",
+      "rap for driving",
+      "club rap night",
+      "trap night drive",
+      "toxic rap"
+    ]
+  },
+  {
+    "name": "03_english_club_rap",
+    "target_count": 100,
+    "min_popularity": 20,
+    "queries": [
+      "club rap explicit",
+      "party hip hop",
+      "rap banger",
+      "hip hop club",
+      "rap remix club",
+      "west coast club rap",
+      "strip club rap",
+      "new school rap banger",
+      "turn up rap",
+      "trap party"
+    ]
+  },
+  {
+    "name": "04_english_trap_melodic",
+    "target_count": 100,
+    "min_popularity": 20,
+    "queries": [
+      "melodic trap",
+      "trap rap melodic",
+      "rap melodic explicit",
+      "autotune rap",
+      "sad trap banger",
+      "Don Toliver type",
+      "Tory Lanez type",
+      "A Boogie type",
+      "NAV type rap",
+      "Post Malone type rap"
+    ]
+  },
+  {
+    "name": "05_english_new_school_mix",
+    "target_count": 100,
+    "min_popularity": 20,
+    "queries": [
+      "new school rap",
+      "trap hits",
+      "hip hop hits explicit",
+      "rap 2024",
+      "rap 2025",
+      "rap 2026",
+      "viral rap",
+      "drill rap club",
+      "trap remix",
+      "hip hop remix"
+    ]
+  },
+  {
+    "name": "06_spanish_malianteo_boricua",
+    "target_count": 100,
+    "min_popularity": 10,
+    "queries": [
+      "malianteo",
+      "malianteo boricua",
+      "trap boricua",
+      "reggaeton maleanteo",
+      "calle reggaeton",
+      "reggaeton calle",
+      "Ñengo Flow",
+      "Anuel AA malianteo",
+      "Bryant Myers",
+      "Arcangel malianteo"
+    ]
+  },
+  {
+    "name": "07_spanish_latin_trap",
+    "target_count": 100,
+    "min_popularity": 15,
+    "queries": [
+      "latin trap",
+      "trap latino",
+      "trap latino explicit",
+      "Bad Bunny trap",
+      "Myke Towers trap",
+      "Eladio Carrion",
+      "Mora trap",
+      "Jhayco trap",
+      "Duki trap",
+      "Khea trap"
+    ]
+  },
+  {
+    "name": "08_spanish_reggaeton_dark",
+    "target_count": 100,
+    "min_popularity": 15,
+    "queries": [
+      "reggaeton oscuro",
+      "reggaeton dark",
+      "reggaeton de calle",
+      "perreo oscuro",
+      "perreo intenso",
+      "reggaeton lento dark",
+      "reggaeton remix",
+      "latin club reggaeton",
+      "underground reggaeton",
+      "old school reggaeton"
+    ]
+  },
+  {
+    "name": "09_spanish_perreo_party",
+    "target_count": 100,
+    "min_popularity": 20,
+    "queries": [
+      "perreo",
+      "perreo intenso",
+      "reggaeton party",
+      "perreo remix",
+      "reggaeton banger",
+      "dembow reggaeton",
+      "neoperreo",
+      "Ryan Castro",
+      "Blessd",
+      "Cris Mj"
+    ]
+  },
+  {
+    "name": "10_argentina_trap_turreo",
+    "target_count": 100,
+    "min_popularity": 10,
+    "queries": [
+      "trap argentino",
+      "turreo",
+      "turreo argentino",
+      "rap argentino trap",
+      "Duki",
+      "YSY A",
+      "Neo Pistea",
+      "Cazzu",
+      "Lit Killah",
+      "Tiago PZK"
+    ]
+  },
+  {
+    "name": "11_rkt_cumbia_420",
+    "target_count": 100,
+    "min_popularity": 5,
+    "queries": [
+      "RKT",
+      "rkt remix",
+      "cumbia 420",
+      "cumbia 420 remix",
+      "turreo rkt",
+      "Kaleb Di Masi",
+      "L-Gante",
+      "La Joaqui",
+      "Ecko rkt",
+      "Alan Gomez rkt"
+    ]
+  },
+  {
+    "name": "12_supermerk2_cumbia_villera",
+    "target_count": 100,
+    "min_popularity": 0,
+    "queries": [
+      "Supermerk2",
+      "Supermerk2 remix",
+      "cumbia villera",
+      "cumbia villera argentina",
+      "Damas Gratis",
+      "Pablito Lescano",
+      "Yerba Brava",
+      "Los Pibes Chorros",
+      "Flor de Piedra",
+      "Mala Fama"
+    ]
+  },
+  {
+    "name": "13_migrantes_cumbia_pop_rkt",
+    "target_count": 100,
+    "min_popularity": 5,
+    "queries": [
+      "Migrantes",
+      "Migrantes remix",
+      "cumbia pop argentina",
+      "cumbia argentina moderna",
+      "rkt pop",
+      "cumbia rkt",
+      "Ke Personajes",
+      "Q Lokura",
+      "La Konga",
+      "Rafaga remix"
+    ]
+  },
+  {
+    "name": "14_cumbia_remix_turreo_mix",
+    "target_count": 100,
+    "min_popularity": 5,
+    "queries": [
+      "cumbia remix",
+      "cumbia callejera",
+      "cumbia argentina remix",
+      "cumbia villera remix",
+      "rkt cumbia remix",
+      "turreo remix",
+      "cachengue",
+      "cachengue remix",
+      "cumbia cheta",
+      "cumbia sonidera remix"
+    ]
+  },
+  {
+    "name": "15_persian_rap_legends",
+    "target_count": 100,
+    "min_popularity": 0,
+    "queries": [
+      "Persian rap",
+      "Iranian rap",
+      "rap farsi",
+      "رپ فارسی",
+      "رپ ایرانی",
+      "Hichkas",
+      "Reza Pishro",
+      "Yas rap",
+      "Zedbazi",
+      "Bahram rap"
+    ]
+  },
+  {
+    "name": "16_persian_trap_melodic",
+    "target_count": 100,
+    "min_popularity": 0,
+    "queries": [
+      "Persian trap",
+      "trap farsi",
+      "ترپ فارسی",
+      "Iranian trap",
+      "rap farsi trap",
+      "Behzad Leito",
+      "Sepehr Khalse",
+      "Koorosh",
+      "Arta",
+      "Catchybeatz"
+    ]
+  },
+  {
+    "name": "17_persian_party_club_rap",
+    "target_count": 100,
+    "min_popularity": 0,
+    "queries": [
+      "Persian party rap",
+      "Iranian hip hop club",
+      "rap farsi party",
+      "Persian hip hop",
+      "hip hop farsi",
+      "Zedbazi party",
+      "Sijal",
+      "Sohrab MJ",
+      "Mehrad Hidden",
+      "Alireza JJ"
+    ]
+  },
+  {
+    "name": "18_persian_dark_drill",
+    "target_count": 100,
+    "min_popularity": 0,
+    "queries": [
+      "Persian drill",
+      "Iranian drill",
+      "dark Persian rap",
+      "rap farsi dark",
+      "Persian underground rap",
+      "Putak",
+      "021G",
+      "Shayea",
+      "Ho3ein",
+      "Gdaal"
+    ]
+  },
+  {
+    "name": "19_mixed_english_spanish_remix",
+    "target_count": 100,
+    "min_popularity": 10,
+    "queries": [
+      "latin hip hop remix",
+      "spanish english rap remix",
+      "reggaeton hip hop remix",
+      "latin trap remix",
+      "malianteo remix",
+      "rap latino remix",
+      "perreo hip hop remix",
+      "G-Eazy latin remix",
+      "trap latino english remix",
+      "club latin rap"
+    ]
+  },
+  {
+    "name": "20_global_filler_all_styles",
+    "target_count": 100,
+    "min_popularity": 5,
+    "queries": [
+      "global trap",
+      "latin rap",
+      "international hip hop",
+      "trap remix 2025",
+      "rap remix 2025",
+      "reggaeton remix 2025",
+      "cumbia remix 2025",
+      "Persian rap remix",
+      "malianteo 2025",
+      "RKT 2025"
+    ]
+  }
+]
