@@ -462,7 +462,9 @@ def build_spotify_client() -> spotipy.Spotify:
 
 
 def get_access_token(sp: spotipy.Spotify) -> str:
-    token_info = sp.auth_manager.get_access_token(as_dict=True)
+    token_info = sp.auth_manager.get_cached_token()
+    if not token_info:
+        token_info = sp.auth_manager.get_access_token()
     if isinstance(token_info, dict):
         return token_info["access_token"]
     return token_info
