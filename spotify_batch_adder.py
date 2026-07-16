@@ -430,11 +430,18 @@ BATCH_PLAN = [
 def build_spotify_client() -> spotipy.Spotify:
     client_id = os.getenv("SPOTIFY_CLIENT_ID")
     client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    token_info_json = os.getenv("SPOTIFY_TOKEN_INFO_JSON")
+    cache_path = os.getenv("SPOTIFY_CACHE_PATH", ".cache")
 
     if not client_id or not client_secret:
         raise RuntimeError(
             "Missing env vars. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET first."
         )
+
+    if token_info_json:
+        cache_file = Path(cache_path)
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(token_info_json, encoding="utf-8")
 
     scope = "playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative user-read-email user-library-read"
 
@@ -445,6 +452,7 @@ def build_spotify_client() -> spotipy.Spotify:
             redirect_uri=REDIRECT_URI,
             scope=scope,
             open_browser=True,
+            cache_path=cache_path,
         ),
         requests_timeout=30,
         retries=0,

@@ -50,6 +50,33 @@ Linux cron, daily at 03:00:
 4. Add this line, replacing paths and env values:
    0 3 * * * cd /home/YOUR_USER/spotify_batches_tool_v4 && SPOTIFY_CLIENT_ID="your_client_id" SPOTIFY_CLIENT_SECRET="your_client_secret" /usr/bin/python3 spotify_batch_adder.py --hourly-update --skip-existing-check --update-count 25 --request-delay 1.0 --max-query-variants 1 >> /home/YOUR_USER/spotify_batches_tool_v4/cron.log 2>&1
 
+Vercel deploy, daily at 03:00 UTC:
+1. Refresh local Spotify token after the user-library-read scope change:
+   Remove-Item .cache* -Force
+   py .\spotify_batch_adder.py --learn-liked-styles --liked-limit 0 --artist-genre-limit 0 --request-delay 1.0
+2. Install and login:
+   npm i -g vercel
+   vercel login
+3. Create/link project from this folder:
+   vercel
+4. Add production env vars:
+   vercel env add SPOTIFY_CLIENT_ID production
+   vercel env add SPOTIFY_CLIENT_SECRET production
+   vercel env add SPOTIFY_TOKEN_INFO_JSON production
+   vercel env add SPOTIFY_CACHE_PATH production
+   vercel env add SPOTIFY_PLAYLIST_ID production
+   vercel env add CRON_SECRET production
+5. Env values:
+   SPOTIFY_TOKEN_INFO_JSON = full one-line contents of .cache
+   SPOTIFY_CACHE_PATH = /tmp/.cache
+   SPOTIFY_PLAYLIST_ID = 6hFjAjRHW88LUKau2rIDHC or your playlist ID
+   CRON_SECRET = any long random password
+6. Deploy:
+   vercel --prod
+7. Cron endpoint:
+   /api/update
+   Schedule lives in vercel.json: 0 3 * * *
+
 Add to the existing hardcoded playlist:
 py .\spotify_batch_adder.py --skip-existing-check --add-all --pages-per-query 1 --request-delay 1.0 --max-query-variants 1
 
