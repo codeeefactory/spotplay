@@ -17,6 +17,7 @@ from spotify_batch_adder import (  # noqa: E402
     get_or_create_playlist_by_name,
     list_current_user_playlists,
     run_hourly_update,
+    spotify_get,
 )
 
 
@@ -134,7 +135,8 @@ class handler(BaseHTTPRequestHandler):
             resolved_playlist_name = ""
             if playlist_id_from_form:
                 playlist_id = playlist_id_from_form
-                resolved_playlist_name = "(selected)"
+                playlist_meta = spotify_get(sp, f"playlists/{playlist_id}", {"fields": "name"})
+                resolved_playlist_name = playlist_meta.get("name", "(selected)")
             elif playlist_name:
                 playlist = get_or_create_playlist_by_name(
                     sp=sp,
