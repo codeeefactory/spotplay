@@ -510,20 +510,36 @@ def is_rate_limit_error(exc: Exception) -> bool:
 def spotify_get(sp: spotipy.Spotify, path: str, params: Dict | None = None) -> Dict:
     token = get_access_token(sp)
     url = f"https://api.spotify.com/v1/{path.lstrip('/')}"
-    response = requests.get(url, headers={"Authorization": f"Bearer {token}"}, params=params or {}, timeout=30)
-    raise_for_spotify_response(response, "GET", url)
+    for attempt in range(4):
+        response = requests.get(url, headers={"Authorization": f"Bearer {token}"}, params=params or {}, timeout=30)
+        if response.status_code == 429:
+            raise_for_spotify_response(response, "GET", url)
+        if response.status_code < 500:
+            raise_for_spotify_response(response, "GET", url)
+            return response.json()
+        if attempt == 3:
+            raise_for_spotify_response(response, "GET", url)
+        time.sleep(1.5 * (attempt + 1))
     return response.json()
 
 
 def spotify_post(sp: spotipy.Spotify, path: str, payload: Dict | None = None) -> Dict:
     token = get_access_token(sp)
     url = f"https://api.spotify.com/v1/{path.lstrip('/')}"
-    response = requests.post(
-        url,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        json=payload or {},
-        timeout=30,
-    )
+    for attempt in range(4):
+        response = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=payload or {},
+            timeout=30,
+        )
+        if response.status_code == 429:
+            raise_for_spotify_response(response, "POST", url)
+        if response.status_code < 500:
+            break
+        if attempt == 3:
+            raise_for_spotify_response(response, "POST", url)
+        time.sleep(1.5 * (attempt + 1))
     raise_for_spotify_response(response, "POST", url)
     if response.text.strip():
         return response.json()
