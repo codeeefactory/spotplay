@@ -101,6 +101,18 @@ def html_page(
     const button = document.querySelector("button");
     const progress = document.querySelector("#progress");
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromUrl = params.get("token");
+    if (tokenFromUrl) localStorage.setItem("spotify_update_token", tokenFromUrl);
+
+    function getToken() {{
+      const input = form.querySelector("[name=token]");
+      let token = input?.value || localStorage.getItem("spotify_update_token") || "";
+      if (!token) token = window.prompt("Enter secret token") || "";
+      if (token) localStorage.setItem("spotify_update_token", token);
+      if (input) input.value = token;
+      return token;
+    }}
 
     form.addEventListener("submit", async (event) => {{
       event.preventDefault();
@@ -108,6 +120,12 @@ def html_page(
       progress.textContent = "";
 
       const original = new FormData(form);
+      const token = getToken();
+      if (!token) {{
+        progress.textContent = "Missing secret token.\\n";
+        button.disabled = false;
+        return;
+      }}
       const requested = Number(original.get("update_count") || "0");
       let remaining = requested;
       let totalAdded = 0;
@@ -118,6 +136,7 @@ def html_page(
         const chunk = requested === 0 ? 100 : Math.min(100, remaining);
         data.set("update_count", String(chunk));
         data.set("batch_size", "100");
+        data.set("token", token);
         batch += 1;
 
         progress.textContent += `Batch ${{batch}}: requesting ${{chunk}} tracks...\\n`;
@@ -131,6 +150,10 @@ def html_page(
         const result = JSON.parse(jsonText || text);
 
         progress.textContent += JSON.stringify(result, null, 2) + "\\n\\n";
+        if (result.error === "Unauthorized") {{
+          localStorage.removeItem("spotify_update_token");
+          progress.textContent += "Token rejected. Reload page with correct token.\\n";
+        }}
         if (!result.ok) break;
 
         const added = Number(result.added_count || 0);
