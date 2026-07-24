@@ -105,13 +105,27 @@ def html_page(
     const tokenFromUrl = params.get("token");
     if (tokenFromUrl) localStorage.setItem("spotify_update_token", tokenFromUrl);
 
-    function getToken() {{
+    function getToken(forcePrompt = false) {{
       const input = form.querySelector("[name=token]");
-      let token = input?.value || localStorage.getItem("spotify_update_token") || "";
+      let token = "";
+      if (!forcePrompt) {{
+        token = input?.value || localStorage.getItem("spotify_update_token") || "";
+      }}
       if (!token) token = window.prompt("Enter secret token") || "";
       if (token) localStorage.setItem("spotify_update_token", token);
       if (input) input.value = token;
       return token;
+    }}
+
+    async function submitBatch(data) {{
+      const response = await fetch("/api/update", {{ method: "POST", body: data }});
+      const text = await response.text();
+      const jsonText = text.match(/<pre>([\\s\\S]*?)<\\/pre>/)?.[1]
+        ?.replace(/&quot;/g, '"')
+        ?.replace(/&amp;/g, '&')
+        ?.replace(/&lt;/g, '<')
+        ?.replace(/&gt;/g, '>');
+      return JSON.parse(jsonText || text);
     }}
 
     form.addEventListener("submit", async (event) => {{
@@ -120,7 +134,7 @@ def html_page(
       progress.textContent = "";
 
       const original = new FormData(form);
-      const token = getToken();
+      let token = getToken();
       if (!token) {{
         progress.textContent = "Missing secret token.\\n";
         button.disabled = false;
@@ -140,19 +154,20 @@ def html_page(
         batch += 1;
 
         progress.textContent += `Batch ${{batch}}: requesting ${{chunk}} tracks...\\n`;
-        const response = await fetch("/api/update", {{ method: "POST", body: data }});
-        const text = await response.text();
-        const jsonText = text.match(/<pre>([\\s\\S]*?)<\\/pre>/)?.[1]
-          ?.replace(/&quot;/g, '"')
-          ?.replace(/&amp;/g, '&')
-          ?.replace(/&lt;/g, '<')
-          ?.replace(/&gt;/g, '>');
-        const result = JSON.parse(jsonText || text);
+        let result = await submitBatch(data);
+        if (result.error === "Unauthorized") {{
+          localStorage.removeItem("spotify_update_token");
+          progress.textContent += "Token rejected. Enter correct token to retry this batch.\\n";
+          token = getToken(true);
+          if (!token) break;
+          data.set("token", token);
+          result = await submitBatch(data);
+        }}
 
         progress.textContent += JSON.stringify(result, null, 2) + "\\n\\n";
         if (result.error === "Unauthorized") {{
           localStorage.removeItem("spotify_update_token");
-          progress.textContent += "Token rejected. Reload page with correct token.\\n";
+          progress.textContent += "Token rejected again. Open page with correct ?token=... value.\\n";
         }}
         if (!result.ok) break;
 
