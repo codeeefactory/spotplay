@@ -713,6 +713,53 @@ def create_playlist(
     return playlist_id
 
 
+def find_playlist_by_name(sp: spotipy.Spotify, name: str) -> Dict | None:
+    wanted = name.strip().casefold()
+    if not wanted:
+        return None
+
+    offset = 0
+    while True:
+        page = spotify_get(
+            sp,
+            "me/playlists",
+            params={
+                "limit": 50,
+                "offset": offset,
+            },
+        )
+        for playlist in page.get("items", []):
+            if (playlist.get("name") or "").strip().casefold() == wanted:
+                return playlist
+        if not page.get("next"):
+            break
+        offset += 50
+
+    return None
+
+
+def get_or_create_playlist_by_name(
+    sp: spotipy.Spotify,
+    name: str,
+    public: bool,
+    description: str,
+) -> Dict:
+    existing = find_playlist_by_name(sp, name)
+    if existing:
+        return {
+            "id": existing["id"],
+            "name": existing.get("name", name),
+            "created": False,
+        }
+
+    playlist_id = create_playlist(sp, name, public, description)
+    return {
+        "id": playlist_id,
+        "name": name,
+        "created": True,
+    }
+
+
 def get_existing_uris(sp: spotipy.Spotify, playlist_id: str, market: str) -> Set[str]:
     """Read playlist tracks through the new /playlists/{id}/items endpoint."""
     existing = set()
