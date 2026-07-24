@@ -1248,7 +1248,7 @@ def run_hourly_update(
     skip_existing_check: bool,
     debug_search: bool,
     stateless_rotation: bool = False,
-) -> None:
+) -> Dict:
     state_path = output_dir / "hourly_state.json"
     tracks = collect_hourly_tracks(
         sp=sp,
@@ -1266,10 +1266,23 @@ def run_hourly_update(
 
     if not tracks:
         print("No new hourly tracks found.")
-        return
+        return {"added_count": 0, "output_dir": str(output_dir)}
 
     save_outputs({"hourly_update": tracks}, output_dir)
     add_batch(sp, playlist_id, "hourly_update", tracks)
+    return {
+        "added_count": len(tracks),
+        "playlist_id": playlist_id,
+        "output_dir": str(output_dir),
+        "sample_tracks": [
+            {
+                "track": track.get("track", ""),
+                "artists": track.get("artists", ""),
+                "query": track.get("query", ""),
+            }
+            for track in tracks[:5]
+        ],
+    }
 
 
 def add_batches_interactive(

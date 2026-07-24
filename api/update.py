@@ -43,7 +43,7 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             sp = build_spotify_client()
-            run_hourly_update(
+            result = run_hourly_update(
                 sp=sp,
                 playlist_id=os.getenv("SPOTIFY_PLAYLIST_ID", DEFAULT_PLAYLIST_ID),
                 market=os.getenv("SPOTIFY_MARKET", "US"),
@@ -56,7 +56,7 @@ class handler(BaseHTTPRequestHandler):
                 debug_search=env_bool("SPOTIFY_DEBUG_SEARCH", False),
                 stateless_rotation=env_bool("SPOTIFY_STATELESS_ROTATION", True),
             )
-            payload = {"ok": True}
+            payload = {"ok": True, **result}
             status = 200
         except Exception as exc:
             payload = {"ok": False, "error": str(exc)}
