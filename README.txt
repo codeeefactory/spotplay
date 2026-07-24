@@ -87,6 +87,10 @@ GitHub Actions daily scheduler:
    gh run list --repo codeeefactory/spotplay --workflow "Spotify daily update" --limit 3
 5. Schedule lives in .github/workflows/spotify-daily.yml: 10 3 * * *
 
+Manual browser run:
+Open this URL after replacing YOUR_CRON_SECRET:
+https://spotplaymaker.vercel.app/api/update?token=YOUR_CRON_SECRET
+
 Add to the existing hardcoded playlist:
 py .\spotify_batch_adder.py --skip-existing-check --add-all --pages-per-query 1 --request-delay 1.0 --max-query-variants 1
 

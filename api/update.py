@@ -4,6 +4,7 @@ import shutil
 import sys
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -28,7 +29,8 @@ class handler(BaseHTTPRequestHandler):
         secret = os.getenv("CRON_SECRET")
         if secret:
             expected = f"Bearer {secret}"
-            if self.headers.get("Authorization") != expected:
+            query_token = parse_qs(urlparse(self.path).query).get("token", [""])[0]
+            if self.headers.get("Authorization") != expected and query_token != secret:
                 self.send_response(401)
                 self.end_headers()
                 self.wfile.write(b"Unauthorized")
