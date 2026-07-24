@@ -118,14 +118,13 @@ def html_page(
     }}
 
     async function submitBatch(data) {{
-      const response = await fetch("/api/update", {{ method: "POST", body: data }});
-      const text = await response.text();
-      const jsonText = text.match(/<pre>([\\s\\S]*?)<\\/pre>/)?.[1]
-        ?.replace(/&quot;/g, '"')
-        ?.replace(/&amp;/g, '&')
-        ?.replace(/&lt;/g, '<')
-        ?.replace(/&gt;/g, '>');
-      return JSON.parse(jsonText || text);
+      data.set("response_format", "json");
+      const response = await fetch("/api/update", {{
+        method: "POST",
+        body: data,
+        headers: {{ "Accept": "application/json" }}
+      }});
+      return await response.json();
     }}
 
     form.addEventListener("submit", async (event) => {{
@@ -146,38 +145,43 @@ def html_page(
       let batch = 0;
 
       while (requested === 0 || remaining > 0) {{
-        const data = new FormData(form);
-        const chunk = requested === 0 ? 100 : Math.min(100, remaining);
-        data.set("update_count", String(chunk));
-        data.set("batch_size", "100");
-        data.set("token", token);
-        batch += 1;
-
-        progress.textContent += `Batch ${{batch}}: requesting ${{chunk}} tracks...\\n`;
-        let result = await submitBatch(data);
-        if (result.error === "Unauthorized") {{
-          localStorage.removeItem("spotify_update_token");
-          progress.textContent += "Token rejected. Enter correct token to retry this batch.\\n";
-          token = getToken(true);
-          if (!token) break;
+        try {{
+          const data = new FormData(form);
+          const chunk = requested === 0 ? 100 : Math.min(100, remaining);
+          data.set("update_count", String(chunk));
+          data.set("batch_size", "100");
           data.set("token", token);
-          result = await submitBatch(data);
+          batch += 1;
+
+          progress.textContent += `Batch ${{batch}}: requesting ${{chunk}} tracks...\\n`;
+          let result = await submitBatch(data);
+          if (result.error === "Unauthorized") {{
+            localStorage.removeItem("spotify_update_token");
+            progress.textContent += "Token rejected. Enter correct token to retry this batch.\\n";
+            token = getToken(true);
+            if (!token) break;
+            data.set("token", token);
+            result = await submitBatch(data);
+          }}
+
+          progress.textContent += JSON.stringify(result, null, 2) + "\\n\\n";
+          if (result.error === "Unauthorized") {{
+            localStorage.removeItem("spotify_update_token");
+            progress.textContent += "Token rejected again. Open page with correct ?token=... value.\\n";
+          }}
+          if (!result.ok) break;
+
+          const added = Number(result.added_count || 0);
+          totalAdded += added;
+          if (requested !== 0) remaining -= added;
+          if (added === 0) break;
+          if (requested !== 0 && remaining <= 0) break;
+
+          await sleep(1500);
+        }} catch (error) {{
+          progress.textContent += `Browser error: ${{error.message}}\\n`;
+          break;
         }}
-
-        progress.textContent += JSON.stringify(result, null, 2) + "\\n\\n";
-        if (result.error === "Unauthorized") {{
-          localStorage.removeItem("spotify_update_token");
-          progress.textContent += "Token rejected again. Open page with correct ?token=... value.\\n";
-        }}
-        if (!result.ok) break;
-
-        const added = Number(result.added_count || 0);
-        totalAdded += added;
-        if (requested !== 0) remaining -= added;
-        if (added === 0) break;
-        if (requested !== 0 && remaining <= 0) break;
-
-        await sleep(1500);
       }}
 
       progress.textContent += `Done. Total added: ${{totalAdded}}\\n`;
@@ -305,5 +309,9 @@ class handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         params = parse_qs(self.rfile.read(length).decode("utf-8")) if length else {}
         status, payload = self.run_update(params)
+        if params.get("response_format", [""])[0] == "json" or "application/json" in self.headers.get("Accept", ""):
+            body = json.dumps(payload).encode("utf-8")
+            self.send_body(status, body)
+            return
         page_status, body, content_type = html_page(result=payload, status=status)
         self.send_body(page_status, body, content_type)
