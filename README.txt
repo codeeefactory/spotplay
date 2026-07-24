@@ -88,11 +88,17 @@ GitHub Actions daily scheduler:
 5. Schedule lives in .github/workflows/spotify-daily.yml: 10 3 * * *
 
 Manual browser run:
-Open the page and enter token + playlist name:
+Secret token is CRON_SECRET. On your local machine, show it with:
+Select-String -Path .\.env.local -Pattern "^CRON_SECRET="
+
+Open the page with your token to load current playlists:
+https://spotplaymaker.vercel.app/api/update?token=YOUR_CRON_SECRET
+
+Then choose an existing playlist or type a new playlist name:
 https://spotplaymaker.vercel.app/api/update
 
 Direct manual URL:
-https://spotplaymaker.vercel.app/api/update?token=YOUR_CRON_SECRET&playlist_name=Random&update_count=25
+https://spotplaymaker.vercel.app/api/update?run=1&token=YOUR_CRON_SECRET&playlist_name=Random&update_count=25
 
 Add to the existing hardcoded playlist:
 py .\spotify_batch_adder.py --skip-existing-check --add-all --pages-per-query 1 --request-delay 1.0 --max-query-variants 1

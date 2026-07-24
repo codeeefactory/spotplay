@@ -15,6 +15,7 @@ from spotify_batch_adder import (  # noqa: E402
     DEFAULT_PLAYLIST_ID,
     build_spotify_client,
     get_or_create_playlist_by_name,
+    list_current_user_playlists,
     run_hourly_update,
 )
 
@@ -26,12 +27,38 @@ def env_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def html_page(message: str = "", result: dict | None = None, status: int = 200) -> tuple[int, bytes, str]:
+def html_page(
+    message: str = "",
+    result: dict | None = None,
+    status: int = 200,
+    token: str = "",
+    playlists: list[dict] | None = None,
+) -> tuple[int, bytes, str]:
     result_html = ""
     if result:
         result_html = f"<pre>{escape(json.dumps(result, indent=2, ensure_ascii=False))}</pre>"
     elif message:
         result_html = f"<p>{escape(message)}</p>"
+
+    token_input = (
+        f'<input id="token" name="token" type="hidden" value="{escape(token, quote=True)}">'
+        if token
+        else '<label for="token">Secret token</label><input id="token" name="token" type="password" required>'
+    )
+
+    playlist_options = ""
+    if playlists:
+        options = ['<option value="">Create new playlist...</option>']
+        for playlist in playlists:
+            playlist_id = escape(playlist.get("id", ""), quote=True)
+            playlist_name = escape(playlist.get("name", "Untitled"), quote=True)
+            options.append(f'<option value="{playlist_id}">{playlist_name}</option>')
+        playlist_options = f"""
+    <label for="playlist_id">Choose existing playlist</label>
+    <select id="playlist_id" name="playlist_id">
+      {''.join(options)}
+    </select>
+"""
 
     body = f"""<!doctype html>
 <html lang="en">
@@ -42,7 +69,7 @@ def html_page(message: str = "", result: dict | None = None, status: int = 200) 
   <style>
     body {{ font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; background: #111; color: #f5f5f5; }}
     label {{ display: block; margin: 14px 0 6px; }}
-    input {{ width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #1c1c1c; color: #fff; }}
+    input, select {{ width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #1c1c1c; color: #fff; }}
     button {{ margin-top: 18px; padding: 10px 16px; border: 0; border-radius: 6px; background: #1db954; color: #041207; font-weight: 700; cursor: pointer; }}
     pre {{ white-space: pre-wrap; background: #1c1c1c; border: 1px solid #333; border-radius: 6px; padding: 12px; }}
     small {{ color: #aaa; }}
@@ -50,11 +77,12 @@ def html_page(message: str = "", result: dict | None = None, status: int = 200) 
 </head>
 <body>
   <h1>Spotify Playlist Update</h1>
+  <p><small>Open with <code>?token=YOUR_SECRET</code> to load your playlists.</small></p>
   <form method="post" action="/api/update">
-    <label for="token">Secret token</label>
-    <input id="token" name="token" type="password" required>
-    <label for="playlist_name">Playlist name</label>
-    <input id="playlist_name" name="playlist_name" placeholder="Random" required>
+    {token_input}
+    {playlist_options}
+    <label for="new_playlist_name">New playlist name</label>
+    <input id="new_playlist_name" name="new_playlist_name" placeholder="Only used when no existing playlist is selected">
     <label for="update_count">Tracks to add</label>
     <input id="update_count" name="update_count" type="number" min="1" max="100" value="25">
     <small>If playlist does not exist, app creates it as private.</small>
@@ -97,10 +125,17 @@ class handler(BaseHTTPRequestHandler):
         try:
             sp = build_spotify_client()
             playlist_id = os.getenv("SPOTIFY_PLAYLIST_ID", DEFAULT_PLAYLIST_ID)
-            playlist_name = (params.get("playlist_name", [""])[0] or "").strip()
+            playlist_id_from_form = (params.get("playlist_id", [""])[0] or "").strip()
+            playlist_name = (
+                (params.get("new_playlist_name", [""])[0] or "").strip()
+                or (params.get("playlist_name", [""])[0] or "").strip()
+            )
             playlist_created = False
             resolved_playlist_name = ""
-            if playlist_name:
+            if playlist_id_from_form:
+                playlist_id = playlist_id_from_form
+                resolved_playlist_name = "(selected)"
+            elif playlist_name:
                 playlist = get_or_create_playlist_by_name(
                     sp=sp,
                     name=playlist_name,
@@ -141,11 +176,24 @@ class handler(BaseHTTPRequestHandler):
         params = parse_qs(urlparse(self.path).query)
         wants_run = (
             params.get("run", [""])[0] == "1"
-            or "token" in params
             or bool(self.headers.get("Authorization"))
+            or "playlist_id" in params
+            or "playlist_name" in params
+            or "new_playlist_name" in params
         )
         if not wants_run:
-            status, body, content_type = html_page()
+            token = params.get("token", [""])[0]
+            playlists = None
+            message = ""
+            if token:
+                if self.is_authorized(params):
+                    try:
+                        playlists = list_current_user_playlists(build_spotify_client())
+                    except Exception as exc:
+                        message = f"Could not load playlists: {exc}"
+                else:
+                    message = "Bad token."
+            status, body, content_type = html_page(message=message, token=token, playlists=playlists)
             self.send_body(status, body, content_type)
             return
 

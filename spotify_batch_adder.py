@@ -755,6 +755,27 @@ def find_playlist_by_name(sp: spotipy.Spotify, name: str) -> Dict | None:
     return None
 
 
+def list_current_user_playlists(sp: spotipy.Spotify) -> List[Dict]:
+    playlists: List[Dict] = []
+    offset = 0
+
+    while True:
+        page = spotify_get(
+            sp,
+            "me/playlists",
+            params={
+                "limit": 50,
+                "offset": offset,
+            },
+        )
+        playlists.extend(page.get("items", []))
+        if not page.get("next"):
+            break
+        offset += 50
+
+    return playlists
+
+
 def get_or_create_playlist_by_name(
     sp: spotipy.Spotify,
     name: str,
