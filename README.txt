@@ -77,6 +77,16 @@ Vercel deploy, daily at 03:00 UTC:
    /api/update
    Schedule lives in vercel.json: 0 3 * * *
 
+GitHub Actions daily scheduler:
+1. This repo includes .github/workflows/spotify-daily.yml.
+2. Add repository secret:
+   gh secret set CRON_SECRET --repo codeeefactory/spotplay
+3. Manual test:
+   gh workflow run "Spotify daily update" --repo codeeefactory/spotplay --ref master
+4. Check result:
+   gh run list --repo codeeefactory/spotplay --workflow "Spotify daily update" --limit 3
+5. Schedule lives in .github/workflows/spotify-daily.yml: 10 3 * * *
+
 Add to the existing hardcoded playlist:
 py .\spotify_batch_adder.py --skip-existing-check --add-all --pages-per-query 1 --request-delay 1.0 --max-query-variants 1
 
