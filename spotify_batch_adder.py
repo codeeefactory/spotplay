@@ -760,9 +760,20 @@ def get_or_create_playlist_by_name(
     }
 
 
-def get_existing_uris(sp: spotipy.Spotify, playlist_id: str, market: str) -> Set[str]:
-    """Read playlist tracks through the new /playlists/{id}/items endpoint."""
-    existing = set()
+def track_fingerprint(name: str, artists: str | List[str]) -> str:
+    if isinstance(artists, list):
+        artist_text = " ".join(sorted(a.strip().casefold() for a in artists if a.strip()))
+    else:
+        artist_text = artists.strip().casefold()
+    title = re.sub(r"\s+", " ", name.strip().casefold())
+    artist_text = re.sub(r"\s+", " ", artist_text)
+    return f"{title}|{artist_text}"
+
+
+def get_existing_track_refs(sp: spotipy.Spotify, playlist_id: str, market: str) -> tuple[Set[str], Set[str]]:
+    """Read playlist track URIs and title/artist fingerprints."""
+    uris: Set[str] = set()
+    fingerprints: Set[str] = set()
     offset = 0
 
     while True:
@@ -770,7 +781,7 @@ def get_existing_uris(sp: spotipy.Spotify, playlist_id: str, market: str) -> Set
             sp,
             f"playlists/{playlist_id}/items",
             params={
-                "fields": "items(item(uri)),next",
+                "fields": "items(item(uri,name,artists(name))),next",
                 "limit": API_PAGE_LIMIT,
                 "offset": offset,
                 "market": market,
@@ -779,15 +790,30 @@ def get_existing_uris(sp: spotipy.Spotify, playlist_id: str, market: str) -> Set
 
         for entry in page.get("items", []):
             item = entry.get("item")
-            if item and item.get("uri") and item.get("uri", "").startswith("spotify:track:"):
-                existing.add(item["uri"])
+            if not item:
+                continue
+
+            uri = item.get("uri", "")
+            if uri.startswith("spotify:track:"):
+                uris.add(uri)
+
+            name = item.get("name", "")
+            artists = [a.get("name", "") for a in item.get("artists", [])]
+            if name and artists:
+                fingerprints.add(track_fingerprint(name, artists))
 
         if not page.get("next"):
             break
 
         offset += API_PAGE_LIMIT
 
-    return existing
+    return uris, fingerprints
+
+
+def get_existing_uris(sp: spotipy.Spotify, playlist_id: str, market: str) -> Set[str]:
+    """Read playlist tracks through the new /playlists/{id}/items endpoint."""
+    uris, _fingerprints = get_existing_track_refs(sp, playlist_id, market)
+    return uris
 
 def normalize_query_variants(query: str) -> List[str]:
     """Create Spotify-search-friendly fallbacks for brittle quoted/field queries."""
@@ -1218,16 +1244,19 @@ def collect_hourly_tracks(
 
     if skip_existing_check:
         global_seen = set(state_seen)
+        global_fingerprints: Set[str] = set()
     else:
         print("Reading current playlist to avoid duplicates...")
         try:
-            global_seen = get_existing_uris(sp, playlist_id, market) | state_seen
+            global_seen, global_fingerprints = get_existing_track_refs(sp, playlist_id, market)
+            global_seen |= state_seen
             print(f"Known tracks: {len(global_seen)}")
         except Exception as exc:
             if is_rate_limit_error(exc):
                 raise
             print(f"Warning: playlist read failed, using state file only: {exc}")
             global_seen = set(state_seen)
+            global_fingerprints = set()
 
     collected: List[Dict] = []
     style_queries: List[str] = []
@@ -1263,11 +1292,14 @@ def collect_hourly_tracks(
 
         for track in found:
             uri = track["uri"]
-            if uri in global_seen:
+            fingerprint = track_fingerprint(track.get("track", ""), track.get("artists", ""))
+            if uri in global_seen or fingerprint in global_fingerprints:
                 continue
             track["batch"] = "hourly_update"
             collected.append(track)
             global_seen.add(uri)
+            if fingerprint:
+                global_fingerprints.add(fingerprint)
             state_seen.add(uri)
             if len(collected) >= update_count:
                 break
