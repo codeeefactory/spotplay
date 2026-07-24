@@ -72,6 +72,7 @@ def html_page(
     label {{ display: block; margin: 14px 0 6px; }}
     input, select {{ width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #1c1c1c; color: #fff; }}
     button {{ margin-top: 18px; padding: 10px 16px; border: 0; border-radius: 6px; background: #1db954; color: #041207; font-weight: 700; cursor: pointer; }}
+    button[disabled] {{ opacity: .6; cursor: wait; }}
     pre {{ white-space: pre-wrap; background: #1c1c1c; border: 1px solid #333; border-radius: 6px; padding: 12px; }}
     small {{ color: #aaa; }}
   </style>
@@ -85,12 +86,66 @@ def html_page(
     <label for="new_playlist_name">New playlist name</label>
     <input id="new_playlist_name" name="new_playlist_name" placeholder="Only used when no existing playlist is selected">
     <label for="update_count">Tracks to add</label>
-    <input id="update_count" name="update_count" type="number" min="1" max="100" value="25">
+    <input id="update_count" name="update_count" type="number" min="0" value="25">
+    <small>Use 0 for continuous batches until no more tracks found. Browser keeps sending safe chunks.</small>
+    <input id="batch_size" name="batch_size" type="hidden" value="100">
+    <input id="manual_page" name="manual_page" type="hidden" value="1">
     <small>If playlist does not exist, app creates it as private.</small>
     <br>
     <button type="submit">Run update</button>
   </form>
-  {result_html}
+  <div id="server-result">{result_html}</div>
+  <pre id="progress"></pre>
+  <script>
+    const form = document.querySelector("form");
+    const button = document.querySelector("button");
+    const progress = document.querySelector("#progress");
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    form.addEventListener("submit", async (event) => {{
+      event.preventDefault();
+      button.disabled = true;
+      progress.textContent = "";
+
+      const original = new FormData(form);
+      const requested = Number(original.get("update_count") || "0");
+      let remaining = requested;
+      let totalAdded = 0;
+      let batch = 0;
+
+      while (requested === 0 || remaining > 0) {{
+        const data = new FormData(form);
+        const chunk = requested === 0 ? 100 : Math.min(100, remaining);
+        data.set("update_count", String(chunk));
+        data.set("batch_size", "100");
+        batch += 1;
+
+        progress.textContent += `Batch ${{batch}}: requesting ${{chunk}} tracks...\\n`;
+        const response = await fetch("/api/update", {{ method: "POST", body: data }});
+        const text = await response.text();
+        const jsonText = text.match(/<pre>([\\s\\S]*?)<\\/pre>/)?.[1]
+          ?.replace(/&quot;/g, '"')
+          ?.replace(/&amp;/g, '&')
+          ?.replace(/&lt;/g, '<')
+          ?.replace(/&gt;/g, '>');
+        const result = JSON.parse(jsonText || text);
+
+        progress.textContent += JSON.stringify(result, null, 2) + "\\n\\n";
+        if (!result.ok) break;
+
+        const added = Number(result.added_count || 0);
+        totalAdded += added;
+        if (requested !== 0) remaining -= added;
+        if (added === 0) break;
+        if (requested !== 0 && remaining <= 0) break;
+
+        await sleep(1500);
+      }}
+
+      progress.textContent += `Done. Total added: ${{totalAdded}}\\n`;
+      button.disabled = false;
+    }});
+  </script>
 </body>
 </html>"""
     return status, body.encode("utf-8"), "text/html; charset=utf-8"
@@ -148,8 +203,10 @@ class handler(BaseHTTPRequestHandler):
                 playlist_created = playlist["created"]
                 resolved_playlist_name = playlist["name"]
 
-            update_count = int(params.get("update_count", [os.getenv("SPOTIFY_UPDATE_COUNT", "25")])[0])
-            update_count = max(1, min(update_count, 100))
+            requested_count = int(params.get("update_count", [os.getenv("SPOTIFY_UPDATE_COUNT", "25")])[0])
+            batch_size = int(params.get("batch_size", ["100"])[0])
+            batch_size = max(1, min(batch_size, 100))
+            update_count = max(1, min(requested_count, batch_size))
             result = run_hourly_update(
                 sp=sp,
                 playlist_id=playlist_id,
@@ -168,6 +225,9 @@ class handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "playlist_name": resolved_playlist_name or playlist_name or "(default)",
                 "playlist_created": playlist_created,
+                "requested_count": requested_count,
+                "processed_count": update_count,
+                "remaining_count": max(0, requested_count - result.get("added_count", 0)) if requested_count > 0 else None,
                 **result,
             }
             return 200, payload
