@@ -1,0 +1,19 @@
+name: Spotify daily update
+
+on:
+  schedule:
+    - cron: "10 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Vercel update endpoint
+        run: |
+          curl --fail --show-error --silent \
+            --retry 3 \
+            --retry-delay 20 \
+            --max-time 180 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://spotplaymaker.vercel.app/api/update"
