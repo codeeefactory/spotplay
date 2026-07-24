@@ -1,0 +1,7 @@
+.git
+.cache
+.env*
+__pycache__
+api/__pycache__
+spotify_batch_output
+*.pyc

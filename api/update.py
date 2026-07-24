@@ -54,6 +54,7 @@ class handler(BaseHTTPRequestHandler):
                 search_without_market=env_bool("SPOTIFY_SEARCH_WITHOUT_MARKET", False),
                 skip_existing_check=env_bool("SPOTIFY_SKIP_EXISTING_CHECK", False),
                 debug_search=env_bool("SPOTIFY_DEBUG_SEARCH", False),
+                stateless_rotation=env_bool("SPOTIFY_STATELESS_ROTATION", True),
             )
             payload = {"ok": True}
             status = 200

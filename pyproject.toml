@@ -1,2 +1,27 @@
+[project]
+name = "spotify-batches-tool"
+version = "0.1.0"
+description = "Spotify playlist updater with Vercel cron endpoint."
+readme = "README.txt"
+requires-python = ">=3.11"
+authors = [
+    { name = "Sadjad Rgz" },
+]
+dependencies = [
+    "requests>=2.32.0",
+    "spotipy>=2.25.1",
+]
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
 [tool.vercel]
 entrypoint = "api.update:handler"
+
+[tool.hatch.build.targets.wheel]
+packages = ["api"]
+include = [
+    "spotify_batch_adder.py",
+    "spotify_batch_plan.json",
+]
