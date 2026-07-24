@@ -28,6 +28,15 @@ def env_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def get_cookie(headers, name: str) -> str:
+    cookie_header = headers.get("Cookie", "")
+    for chunk in cookie_header.split(";"):
+        key, sep, value = chunk.strip().partition("=")
+        if sep and key == name:
+            return value
+    return ""
+
+
 def html_page(
     message: str = "",
     result: dict | None = None,
@@ -199,13 +208,22 @@ class handler(BaseHTTPRequestHandler):
         if secret:
             expected = f"Bearer {secret}"
             query_token = params.get("token", [""])[0]
-            return self.headers.get("Authorization") == expected or query_token == secret
+            cookie_token = get_cookie(self.headers, "spotify_update_auth")
+            return self.headers.get("Authorization") == expected or query_token == secret or cookie_token == secret
         return True
 
-    def send_body(self, status: int, body: bytes, content_type: str = "application/json") -> None:
+    def send_body(
+        self,
+        status: int,
+        body: bytes,
+        content_type: str = "application/json",
+        extra_headers: dict | None = None,
+    ) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -298,7 +316,10 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     message = "Bad token."
             status, body, content_type = html_page(message=message, token=token, playlists=playlists)
-            self.send_body(status, body, content_type)
+            headers = {}
+            if token and token == os.getenv("CRON_SECRET"):
+                headers["Set-Cookie"] = f"spotify_update_auth={token}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=2592000"
+            self.send_body(status, body, content_type, headers)
             return
 
         status, payload = self.run_update(params)
