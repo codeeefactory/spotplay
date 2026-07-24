@@ -37,6 +37,7 @@ REDIRECT_URI = "http://127.0.0.1:8888/callback"
 # Spotify Development Mode now allows max 10 search results per request.
 # The script paginates with offset instead of asking for 50.
 API_PAGE_LIMIT = 10
+PLAYLIST_PAGE_LIMIT = 50
 SEARCH_LIMIT = 10
 DEFAULT_PAGES_PER_QUERY = 2
 DEFAULT_REQUEST_DELAY = 0.35
@@ -782,7 +783,7 @@ def get_existing_track_refs(sp: spotipy.Spotify, playlist_id: str, market: str) 
             f"playlists/{playlist_id}/items",
             params={
                 "fields": "items(item(uri,name,artists(name))),next",
-                "limit": API_PAGE_LIMIT,
+                "limit": PLAYLIST_PAGE_LIMIT,
                 "offset": offset,
                 "market": market,
             },
@@ -805,7 +806,7 @@ def get_existing_track_refs(sp: spotipy.Spotify, playlist_id: str, market: str) 
         if not page.get("next"):
             break
 
-        offset += API_PAGE_LIMIT
+        offset += PLAYLIST_PAGE_LIMIT
 
     return uris, fingerprints
 
@@ -1238,6 +1239,7 @@ def collect_hourly_tracks(
     debug_search: bool,
     persist_state: bool = True,
     stateless_rotation: bool = False,
+    fail_on_existing_check_error: bool = False,
 ) -> List[Dict]:
     state = load_state(state_path)
     state_seen = set(state.get("seen_uris", []))
@@ -1254,6 +1256,8 @@ def collect_hourly_tracks(
         except Exception as exc:
             if is_rate_limit_error(exc):
                 raise
+            if fail_on_existing_check_error:
+                raise RuntimeError(f"Could not read playlist for duplicate check: {exc}") from exc
             print(f"Warning: playlist read failed, using state file only: {exc}")
             global_seen = set(state_seen)
             global_fingerprints = set()
@@ -1327,6 +1331,7 @@ def run_hourly_update(
     skip_existing_check: bool,
     debug_search: bool,
     stateless_rotation: bool = False,
+    fail_on_existing_check_error: bool = False,
 ) -> Dict:
     state_path = output_dir / "hourly_state.json"
     tracks = collect_hourly_tracks(
@@ -1341,6 +1346,7 @@ def run_hourly_update(
         skip_existing_check=skip_existing_check,
         debug_search=debug_search,
         stateless_rotation=stateless_rotation,
+        fail_on_existing_check_error=fail_on_existing_check_error,
     )
 
     if not tracks:
@@ -1358,6 +1364,7 @@ def run_hourly_update(
                 "track": track.get("track", ""),
                 "artists": track.get("artists", ""),
                 "query": track.get("query", ""),
+                "uri": track.get("uri", ""),
             }
             for track in tracks[:5]
         ],

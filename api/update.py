@@ -125,6 +125,7 @@ class handler(BaseHTTPRequestHandler):
                 skip_existing_check=env_bool("SPOTIFY_SKIP_EXISTING_CHECK", False),
                 debug_search=env_bool("SPOTIFY_DEBUG_SEARCH", False),
                 stateless_rotation=env_bool("SPOTIFY_STATELESS_ROTATION", True),
+                fail_on_existing_check_error=True,
             )
             payload = {
                 "ok": True,
